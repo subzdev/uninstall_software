@@ -1,17 +1,53 @@
 <#
 .Synopsis
-   Allows listing, finding and uninstalling most software on Windows
+   Allows listing, finding and uninstalling most software on Windows.
+
 .DESCRIPTION
   Allows listing, finding and uninstalling most software on Windows.
+
 INPUTS
   -list Will list all installed 32-bit and 64-bit software installed on the target machine.
-  -find "<software name>" will find a particular application installed giving you the uninstall string
+  -find "<software name>" will find a particular application installed giving you the uninstall string and quiet uninstall string if it exists
   -find "<software name>" -u "<uninstall string>" will allow you to uninstall the software from the Windows machine silently
-.NOTES
-  Follow the steps below via script arguments to find and then uninstall the software.
+  -find "<software name>" -u "<quiet uninstall string>" will allow you to uninstall the software from the Windows machine silently
+
+.EXAMPLE 1
+  Follow the steps below via script arguments to find and then uninstall VLC Media Player.
+
   Step 1: -find "vlc"
+  Step 1 result:
+    1 results 
+    ********** 
+
+    Name: VLC media player
+    Version: 3.0.12
+    Uninstall String: "C:\Program Files\VideoLAN\VLC\uninstall.exe"
+
+    **********
   Step 2: -find "vlc" -u "C:\Program Files\VideoLAN\VLC\uninstall.exe"
-  Step 3: Will get result back stating if it has been uninstalled or not.
+  Step 3: Will get result back stating if the application has been uninstalled or not.
+
+.EXAMPLE 2
+  For a more complex uninstall of for example the Bentley CONNECTION Client with extra arguments.
+
+  Step 1: -find "CONNECTION Client"
+  Step 1 result:
+    2 results 
+    **********
+
+    Name: CONNECTION Client
+    Version: 11.0.3.14
+    Silent Uninstall String: "C:\ProgramData\Package Cache\{54c12e19-d8a1-4c26-80cd-6af08f602d4f}\Setup_CONNECTIONClientx64_11.00.03.14.exe" /uninstall /quiet
+
+    **********
+
+    Name: CONNECTION Client
+    Version: 11.00.03.14
+    Uninstall String: MsiExec.exe /X{BF2011BD-2485-4CBA-BBFB-93205438C75B}
+
+    **********
+  Step 2: -find "CONNECTION Client" -u "C:\ProgramData\Package Cache\{54c12e19-d8a1-4c26-80cd-6af08f602d4f}\Setup_CONNECTIONClientx64_11.00.03.14.exe" -arguments "/uninstall /quiet"
+  Step 3: Will get result back stating if the application has been uninstalled or not.
 #>
 
 [CmdletBinding()]
@@ -19,8 +55,7 @@ param(
     [switch]$list,
     [string]$find,
     [string]$u,
-    [string]$arguments,
-    [switch]$noextraargs
+    [string]$arguments
 
 )
 
@@ -33,15 +68,17 @@ If ($list -And !($find) -And !($u) -And !($exeargs)) {
     
     $ResultCount = (Get-ItemProperty $Paths | Where-Object {$_.UninstallString -notlike ""} | Measure-Object).Count
     Write-Output "$($ResultCount) results `r"
-    Write-Output "*********** `n"
+    Write-Output "********** `n"
 
     foreach ($app in Get-ItemProperty $Paths | Where-Object {$_.UninstallString -notlike ""} | Sort-Object DisplayName){
-        
-        if ($app.UninstallString){
 
+        if ($app.UninstallString){
+            $UninstallString = if ($app.QuietUninstallString) { "Silent Uninstall String: $($app.QuietUninstallString)" } else { "Uninstall String: $($app.UninstallString)" }
             Write-Output "Name: $($app.DisplayName)"
             Write-Output "Version: $($app.DisplayVersion)"
-            Write-Output "Uninstall String: $($app.UninstallString)"
+            Write-Output $UninstallString
+            Write-Output "`r"
+            Write-Output "**********"
             Write-Output "`r"
 
         }else{
@@ -56,10 +93,28 @@ If ($list -And !($find) -And !($u) -And !($exeargs)) {
 If($find -And !($u)){
 
     $FindResults = (Get-ItemProperty $Paths | Where-object { $_.Displayname -match [regex]::Escape($find)} | Measure-Object).Count
-    Write-Output "$($FindResults) results"
-    Get-ItemProperty $Paths |  Where-object { $_.Displayname -match [regex]::Escape($find)} | Sort-Object DisplayName | Select-Object DisplayName, DisplayVersion, UninstallString | Format-List
+    Write-Output "`r"
+    Write-Output "$($FindResults) results `r"
+    Write-Output "********** `n"
+    foreach ($app in Get-ItemProperty $Paths | Where-Object {$_.Displayname -match [regex]::Escape($find)} | Sort-Object DisplayName){
+
+        if ($app.UninstallString){
+            $UninstallString = if ($app.QuietUninstallString) { "Silent Uninstall String: $($app.QuietUninstallString)" } else { "Uninstall String: $($app.UninstallString)" }
+            Write-Output "Name: $($app.DisplayName)"
+            Write-Output "Version: $($app.DisplayVersion)"
+            Write-Output $UninstallString
+            Write-Output "`r"
+            Write-Output "**********"
+            Write-Output "`r"
+
+        }else{
+            
+        }
+        
+    }
 
 }
+
 
 ##################################
 #uninstall code 32-bit and 64-bit
@@ -79,7 +134,8 @@ $AppName = (Get-ItemProperty $Paths | Where-object { $_.UninstallString -match [
 
                 }else{
 
-                Write-Output "$($AppName) has been uninstalled"
+                    Write-Output "$($AppName) has been uninstalled"
+                
                 }
 
     }
@@ -96,7 +152,7 @@ $AppName = (Get-ItemProperty $Paths | Where-object { $_.UninstallString -match [
 
                 }else{
 
-                Write-Output "$($AppName) has been uninstalled"
+                    Write-Output "$($AppName) has been uninstalled"
                 }
             }
             else {
@@ -110,7 +166,7 @@ $AppName = (Get-ItemProperty $Paths | Where-object { $_.UninstallString -match [
 
                 }else{
 
-                Write-Output "$($AppName) has been uninstalled"
+                    Write-Output "$($AppName) has been uninstalled"
                 }
 
             }
@@ -140,7 +196,7 @@ $AppName = (Get-ItemProperty $Paths | Where-object { $_.UninstallString -match [
 
                 }else{
 
-                Write-Output "$($AppName) has been uninstalled"
+                    Write-Output "$($AppName) has been uninstalled"
                 }
 
     }
@@ -157,7 +213,7 @@ $AppName = (Get-ItemProperty $Paths | Where-object { $_.UninstallString -match [
 
                 }else{
 
-                Write-Output "$($AppName) has been uninstalled"
+                    Write-Output "$($AppName) has been uninstalled"
                 }
             }
             else {
@@ -171,7 +227,7 @@ $AppName = (Get-ItemProperty $Paths | Where-object { $_.UninstallString -match [
 
                 }else{
 
-                Write-Output "$($AppName) has been uninstalled"
+                    Write-Output "$($AppName) has been uninstalled"
                 }
 
             }
