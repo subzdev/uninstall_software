@@ -38,6 +38,8 @@
     **********
   Step 2: -list "CONNECTION Client" -u "C:\ProgramData\Package Cache\{54c12e19-d8a1-4c26-80cd-6af08f602d4f}\Setup_CONNECTIONClientx64_11.00.03.14.exe" -args "/uninstall /quiet"
   Step 3: Will get result back stating if the application has been uninstalled or not.
+  .NOTES
+   v1.0 - 8/18/2021 Initial release
 #>
 
 [CmdletBinding()]
