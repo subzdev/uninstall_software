@@ -54,13 +54,13 @@ $null = New-PSDrive -Name HKU -PSProvider Registry -Root Registry::HKEY_USERS
 If ($list -And !($find) -And !($u) -And !($exeargs)) {
     
     
-    $ResultCount = (Get-ItemProperty $Paths | Where-Object {$_.UninstallString -notlike ""} | Measure-Object).Count
+    $ResultCount = (Get-ItemProperty $Paths | Where-Object { $_.UninstallString -notlike "" } | Measure-Object).Count
     Write-Output "$($ResultCount) results `r"
     Write-Output "********** `n"
 
-    foreach ($app in Get-ItemProperty $Paths | Where-Object {$_.UninstallString -notlike ""} | Sort-Object DisplayName){
+    foreach ($app in Get-ItemProperty $Paths | Where-Object { $_.UninstallString -notlike "" } | Sort-Object DisplayName) {
 
-        if ($app.UninstallString){
+        if ($app.UninstallString) {
             $UninstallString = if ($app.QuietUninstallString) { "Silent Uninstall String: $($app.QuietUninstallString)" } else { "Uninstall String: $($app.UninstallString)" }
             Write-Output "Name: $($app.DisplayName)"
             Write-Output "Version: $($app.DisplayVersion)"
@@ -69,7 +69,8 @@ If ($list -And !($find) -And !($u) -And !($exeargs)) {
             Write-Output "**********"
             Write-Output "`r"
 
-        }else{
+        }
+        else {
             
         }
         
@@ -78,15 +79,15 @@ If ($list -And !($find) -And !($u) -And !($exeargs)) {
     
 }
 
-If($find -And !($u)){
+If ($find -And !($u)) {
 
-    $FindResults = (Get-ItemProperty $Paths | Where-object { $_.Displayname -match [regex]::Escape($find)} | Measure-Object).Count
+    $FindResults = (Get-ItemProperty $Paths | Where-object { $_.Displayname -match [regex]::Escape($find) } | Measure-Object).Count
     Write-Output "`r"
     Write-Output "$($FindResults) results `r"
     Write-Output "********** `n"
-    foreach ($app in Get-ItemProperty $Paths | Where-Object {$_.Displayname -match [regex]::Escape($find)} | Sort-Object DisplayName){
+    foreach ($app in Get-ItemProperty $Paths | Where-Object { $_.Displayname -match [regex]::Escape($find) } | Sort-Object DisplayName) {
 
-        if ($app.UninstallString){
+        if ($app.UninstallString) {
             $UninstallString = if ($app.QuietUninstallString) { "Silent Uninstall String: $($app.QuietUninstallString)" } else { "Uninstall String: $($app.UninstallString)" }
             Write-Output "Name: $($app.DisplayName)"
             Write-Output "Version: $($app.DisplayVersion)"
@@ -95,7 +96,8 @@ If($find -And !($u)){
             Write-Output "**********"
             Write-Output "`r"
 
-        }else{
+        }
+        else {
             
         }
         
@@ -107,23 +109,22 @@ If($find -And !($u)){
 ##################################
 #uninstall code 32-bit and 64-bit
 #################################
-Function WithArgs ($u, $exeargs){
-                write-output $u
-                write-output $exeargs
-                Start-Process -Filepath "$u" -ArgumentList $exeargs -Wait
-                $UninstallTest = (Get-ItemProperty $Paths | Where-object { $_.UninstallString -match [regex]::Escape($u)}).DisplayName
-                If($UninstallTest){
+Function WithArgs ($u, $exeargs) {
+    Start-Process -Filepath "$u" -ArgumentList $exeargs -Wait
+    $UninstallTest = (Get-ItemProperty $Paths | Where-object { $_.UninstallString -match [regex]::Escape($u) }).DisplayName
+    If ($UninstallTest) {
                     
-                    Write-Output "$($AppName) has not been uninstalled"
+        Write-Output "$($AppName) has not been uninstalled"
 
-                }else{
+    }
+    else {
 
-                    Write-Output "$($AppName) has been uninstalled"
-                }
+        Write-Output "$($AppName) has been uninstalled"
+    }
 
 }
 
-$AppName = (Get-ItemProperty $Paths | Where-object { $_.UninstallString -match [regex]::Escape($u)}).DisplayName
+$AppName = (Get-ItemProperty $Paths | Where-object { $_.UninstallString -match [regex]::Escape($u) }).DisplayName
 
 If ($find -And $u -Or $u -And !($list)) {
 
@@ -131,16 +132,17 @@ If ($find -And $u -Or $u -And !($list)) {
 
         $MsiArguments = $u -Replace "MsiExec.exe /I", "/X" -Replace "MsiExec.exe ", ""
         Start-Process -FilePath msiexec.exe -ArgumentList "$MsiArguments /quiet /norestart" -Wait
-                $UninstallTest = (Get-ItemProperty $Paths | Where-object { $_.UninstallString -match [regex]::Escape($u)}).DisplayName
-                If($UninstallTest){
+        $UninstallTest = (Get-ItemProperty $Paths | Where-object { $_.UninstallString -match [regex]::Escape($u) }).DisplayName
+        If ($UninstallTest) {
                     
-                    Write-Output "$($AppName) has not been uninstalled"
+            Write-Output "$($AppName) has not been uninstalled"
 
-                }else{
+        }
+        else {
 
-                    Write-Output "$($AppName) has been uninstalled"
+            Write-Output "$($AppName) has been uninstalled"
                 
-                }
+        }
 
     }
     else {
@@ -167,21 +169,22 @@ If ($find -And $u -Or $u -And !($list)) {
 
 }
 
-If ($list -And $u){
+If ($list -And $u) {
 
     If ($u -Match [regex]::Escape("MsiExec")) {
 
         $MsiArguments = $u -Replace "MsiExec.exe /I", "/X" -Replace "MsiExec.exe ", ""
         Start-Process -FilePath msiexec.exe -ArgumentList "$MsiArguments /quiet /norestart" -Wait
-                $UninstallTest = (Get-ItemProperty $Paths | Where-object { $_.UninstallString -match [regex]::Escape($u)}).DisplayName
-                If($UninstallTest){
+        $UninstallTest = (Get-ItemProperty $Paths | Where-object { $_.UninstallString -match [regex]::Escape($u) }).DisplayName
+        If ($UninstallTest) {
                     
-                    Write-Output "$($AppName) has not been uninstalled"
+            Write-Output "$($AppName) has not been uninstalled"
 
-                }else{
+        }
+        else {
 
-                    Write-Output "$($AppName) has been uninstalled"
-                }
+            Write-Output "$($AppName) has been uninstalled"
+        }
 
     }
     else {
