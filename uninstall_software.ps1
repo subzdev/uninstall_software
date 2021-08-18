@@ -3,14 +3,14 @@
    Allows listing, finding and uninstalling most software on Windows.
 .DESCRIPTION
   Allows listing, finding and uninstalling most software on Windows.
-INPUTS
+.INPUTS
   -list Will list all installed 32-bit and 64-bit software installed on the target machine.
   -list "<software name>" will find a particular application installed giving you the uninstall string and quiet uninstall string if it exists
   -list "<software name>" -u "<uninstall string>" will allow you to uninstall the software from the Windows machine silently
   -list "<software name>" -u "<quiet uninstall string>" will allow you to uninstall the software from the Windows machine silently
-.EXAMPLE 1
+.EXAMPLE
   Follow the steps below via script arguments to find and then uninstall VLC Media Player.
-  Step 1: -find "vlc"
+  Step 1: -list "vlc"
   Step 1 result:
     1 results 
     ********** 
@@ -20,7 +20,7 @@ INPUTS
     **********
   Step 2: -list "vlc" -u "C:\Program Files\VideoLAN\VLC\uninstall.exe"
   Step 3: Will get result back stating if the application has been uninstalled or not.
-.EXAMPLE 2
+.EXAMPLE
   For a more complex uninstall of for example the Bentley CONNECTION Client with extra arguments.
   Step 1: -list "CONNECTION Client"
   Step 1 result:
@@ -44,7 +44,6 @@ param(
     [string]$find,
     [string]$u,
     [string]$args
-
 )
 
 $Paths = @("HKLM:\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\*", "HKLM:\SOFTWARE\\Wow6432node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\*", "HKU:\*\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*")
