@@ -52,8 +52,7 @@ $Paths = @("HKLM:\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\*", "H
 
 $null = New-PSDrive -Name HKU -PSProvider Registry -Root Registry::HKEY_USERS
 
-If ($list -And !($find) -And !($u) -And !($exeargs)) {
-    
+If ($list -And !($find) -And !($u) -And !($args)) {
     
     $ResultCount = (Get-ItemProperty $Paths | Where-Object { $_.UninstallString -notlike "" } | Measure-Object).Count
     Write-Output "$($ResultCount) results `r"
@@ -74,13 +73,10 @@ If ($list -And !($find) -And !($u) -And !($exeargs)) {
         else {
             
         }
-        
     }
-    
-    
 }
 
-If ($find -And !($u)) {
+If ($list -And $find -And !($u)) {
 
     $FindResults = (Get-ItemProperty $Paths | Where-object { $_.Displayname -match [regex]::Escape($find) } | Measure-Object).Count
     Write-Output "`r"
@@ -101,9 +97,7 @@ If ($find -And !($u)) {
         else {
             
         }
-        
     }
-
 }
 
 
@@ -122,12 +116,11 @@ Function WithArgs ($u, $exeargs) {
 
         Write-Output "$($AppName) has been uninstalled"
     }
-
 }
 
 $AppName = (Get-ItemProperty $Paths | Where-object { $_.UninstallString -match [regex]::Escape($u) }).DisplayName
 
-If ($find -And $u -Or $u -And !($list)) {
+If ($list -And $find -And $u -Or $u -And !($list)) {
 
     If ($u -Match [regex]::Escape("MsiExec")) {
 
@@ -144,7 +137,6 @@ If ($find -And $u -Or $u -And !($list)) {
             Write-Output "$($AppName) has been uninstalled"
                 
         }
-
     }
     else {
         If (Test-Path -Path "$u" -PathType Leaf) {
@@ -167,7 +159,6 @@ If ($find -And $u -Or $u -And !($list)) {
 
         }
     }
-
 }
 
 If ($list -And $u) {
@@ -209,5 +200,4 @@ If ($list -And $u) {
 
         }
     }
-
 }
