@@ -1,8 +1,10 @@
 <#
 .Synopsis
-   Allows listing, finding and uninstalling most software on Windows.
+   Allows listing, finding and uninstalling most software on Windows. There will be a best effort to uninstall silently if the silent
+  uninstall string is not provided.
 .DESCRIPTION
-  Allows listing, finding and uninstalling most software on Windows.
+  Allows listing, finding and uninstalling most software on Windows. There will be a best effort to uninstall silently if the silent
+  uninstall string is not provided.
 .INPUTS
   -list Will list all installed 32-bit and 64-bit software installed on the target machine.
   -list "<software name>" will find a particular application installed giving you the uninstall string and quiet uninstall string if it exists
