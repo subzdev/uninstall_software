@@ -10,7 +10,7 @@
 .INPUTS
 The following script arguments are available:
          -help                   What you are reading now
-         -list                   Show all software that can be uninstalled by script
+         -list                   Show all installed software
          -name                   Filter installed software by specified name
          -id                     Filter installed software by ID
          -uninstall              Uninstall a specific software based on ID
@@ -45,7 +45,6 @@ $Applications = ForEach ($Application in Get-ItemProperty $Paths | Sort-Object D
         
     }
 }
-write-output $Applications.UninstallString
 Function GetApplications {
     for ($i = 0; $i -le $Applications.Count - 1; $i++) {
         $UninstallString = If ($Applications.QuietUninstallString[$i]) { $Applications.QuietUninstallString[$i] } Else { $Applications.UninstallString[$i] }
