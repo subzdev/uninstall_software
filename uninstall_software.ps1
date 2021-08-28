@@ -6,8 +6,9 @@
   Allows listing, finding and uninstalling most software on Windows. There will be a best effort to uninstall silently if the silent
   uninstall string is not provided.
 .INPUTS
-  -help
+
 The following script arguments are available:
+         -help                   What you are reading now
          -list                   Show all installed software
          -name                   Filter installed software by specified name
          -id                     Filter installed software by ID
