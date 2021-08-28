@@ -108,7 +108,6 @@ Function Uninstall($Name, $ID, $Version, $UninstallString) {
         $UninstallStringSplit = $UninstallString -Split ('"')
         $Path = $UninstallStringSplit[1]
         $Arguments = $UninstallStringSplit[2]
-        Write-Output $UninstallString
         If ($Arguments) {
             $proc = Start-Process -Filepath $Path -ArgumentList $Arguments -PassThru
             Wait-Process -InputObject $proc
