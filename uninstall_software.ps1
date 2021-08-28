@@ -31,8 +31,8 @@ param(
     [switch]$help,
     [switch]$list,
     [string]$name,
-    [string]$id,
-    [switch]$uninstall 
+    [switch]$uninstall,
+    [string]$id
 )
 
 $Paths = @("HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*", "HKLM:\SOFTWARE\\Wow6432node\Microsoft\Windows\CurrentVersion\Uninstall\*")
@@ -227,7 +227,7 @@ If (!$list -And !$name -And $help) {
     Write-Output "`t -list Microsoft"
     Write-Output "`t -list -name 'Tactical RMM Agent'"
     Write-Output "`t -list -name 'Tactical RMM Agent' -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1'"
-    Write-Output "`t -list -name 'Tactical RMM Agent' -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1' -uninstall"
+    Write-Output "`t -list -uninstall -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1'"
     Write-Output "`r"
     Write-Output "`r"
 }
