@@ -213,7 +213,7 @@ If ($list -And $name -And $uninstall -And !$help -Or $list -And $id -And $uninst
 
     Uninstall $AppDetails.Name $AppDetails.ID $AppDetails.Version $AppDetails.UninstallString
 }Else{
-    "Please check your script arguments. (-list -uninstall -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1')"
+    "Please check your script arguments. (Example: -list -uninstall -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1')"
 }
 
 If (!$list -And !$name -And $help) {
