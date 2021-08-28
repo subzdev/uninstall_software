@@ -40,7 +40,7 @@ $Paths = @("HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*", "HKLM:
 $ApplicationsObj = New-Object System.Collections.ArrayList
 
 $Applications = ForEach ($Application in Get-ItemProperty $Paths | Sort-Object DisplayName) {
-    If ($Application.UninstallString -Match "msi" -Or $Application.QuietUninstallString -Match "msi" -Or $Application.UninstallString -Match "msi" -Or $Application.QuietUninstallString -Match '"') {
+    If ($Application.UninstallString -Match "msi" -Or $Application.QuietUninstallString -Match "msi" -Or $Application.UninstallString -Match '"' -Or $Application.QuietUninstallString -Match '"') {
         Write-Output $Application
         
     }
@@ -61,65 +61,88 @@ Function GetApplications {
 
 Function Uninstall($Name, $ID, $Version, $UninstallString) {
     Write-Output "Found $($Name) [$($ID)]"
+    Write-Output "Attempting software uninstall..."
+    Write-Output "`r"
+    If ($UninstallString -iMatch "msiexec") {
+        $UninstallStringSplit = $UninstallString -Split ('"')
+        $Path = $UninstallStringSplit[1]
+        $Arguments = $UninstallStringSplit[2]
+        If ($Arguments) {
+            $UninstallArguments = $Arguments -Replace "MsiExec.exe /I", "/X" -Replace "MsiExec.exe ", "" -Replace "msiexec.exe /i", "/X"
+            $proc = Start-Process msiexec.exe -ArgumentList "$UninstallArguments /quiet /norestart" -PassThru
+            Wait-Process -InputObject $proc
 
-    If ($UninstallString -Match "msi") {
-        $Arguments = $UninstallString -Replace "MsiExec.exe /I", "/X" -Replace "MsiExec.exe ", ""
-        Write-Output "Attempting software uninstall..."
-        Write-Output "`r"
-        $proc = Start-Process msiexec.exe -ArgumentList "$Arguments /quiet /norestart" -PassThru
-        Wait-Process -InputObject $proc
-        If ($proc.ExitCode -ne 0) {
-            Write-Warning "$($Name) was not uninstalled, exited with error code $($proc.ExitCode)."
-            Write-Output "`r"
-            
-        }
-        Else {
-            Write-Output "$($Name) was uninstalled successfully, exited with error code $($proc.ExitCode)."
-            Write-Output "`r"        
-        }
-
-    }
-    ElseIf ($UninstallString -NotMatch "msi" -And $UninstallString -Match '"') {
-        $UninstallArguments = $UninstallString -Split ('"')
-        $Path = $UninstallArguments[1].Trim()
-        Write-Output "Attempting software uninstall..."
-        Write-Output "`r"
-        $proc = Start-Process -Filepath $Path -ArgumentList "/S /SILENT /VERYSILENT /NORESTART" -PassThru
-        Wait-Process -InputObject $proc
-
-        If ($proc.ExitCode -ne 0) {
-            Write-Warning "$($Name) was not uninstalled, exited with error code $($proc.ExitCode)."
-            Write-Output "`r"
-    
-        }
-        Else {
-            Write-Output "$($Name) was uninstalled successfully, exited with error code $($proc.ExitCode)."
-            Write-Output "`r"        
-        }
-
-    }
-    ElseIf ($UninstallString -NotMatch '"') {
-        $UninstallArguments = $UninstallString -Split ("/")
-        $Path = $UninstallArguments[0]
-        $Arguments = "/" + $UninstallArguments[1] + "/S /SILENT /VERYSILENT /NORESTART"
-        Write-Output "Attempting software uninstall..."
-        Write-Output "`r"
-        $proc = Start-Process -Filepath $Path -ArgumentList $Arguments -PassThru
-        Wait-Process -InputObject $proc
-
-        If ($proc.ExitCode -ne 0) {
-            Write-Warning "$($Name) was not uninstalled, exited with error code $($proc.ExitCode)."
-            Write-Output "`r"
-    
-        }
-        Else {
-            Write-Output "$($Name) was uninstalled successfully, exited with error code $($proc.ExitCode)."
-            Write-Output "`r"        
-        }
+            If ($proc.ExitCode -ne 0) {
+                Write-Warning "$($Name) was not uninstalled, exited with error code $($proc.ExitCode)."
+                Write-Output "`r"
         
+            }
+            Else {
+                Write-Output "$($Name) was uninstalled successfully, exited with error code $($proc.ExitCode)."
+                Write-Output "`r"
+
+                
+        
+            }
+        }
+        Else {
+            $UninstallArguments = $UninstallString -Replace "MsiExec.exe /I", "/X" -Replace "MsiExec.exe ", "" -Replace "msiexec.exe /i", "/X"
+            $proc = Start-Process -FilePath msiexec.exe -ArgumentList "$UninstallArguments /quiet /norestart" -PassThru
+            Wait-Process -InputObject $proc
+
+            If ($proc.ExitCode -ne 0) {
+                Write-Warning "$($Name) was not uninstalled, exited with error code $($proc.ExitCode)."
+                Write-Output "`r"
+        
+            }
+            Else {
+                Write-Output "$($Name) was uninstalled successfully, exited with error code $($proc.ExitCode)."
+                Write-Output "`r"
+
+        
+            }
+        }
+
     }
     Else {
-        Write-Output "You will have to manually uninstall."
+        $UninstallStringSplit = $UninstallString -Split ('"')
+        $Path = $UninstallStringSplit[1]
+        $Arguments = $UninstallStringSplit[2]
+        Write-Output $UninstallString
+        If ($Arguments) {
+            $proc = Start-Process -Filepath $Path -ArgumentList $Arguments -PassThru
+            Wait-Process -InputObject $proc
+
+            If ($proc.ExitCode -ne 0) {
+                Write-Warning "$($Name) was not uninstalled, exited with error code $($proc.ExitCode)."
+                Write-Output "`r"
+        
+            }
+            Else {
+                Write-Output "$($Name) was uninstalled successfully, exited with error code $($proc.ExitCode)."
+                Write-Output "`r"
+
+        
+            }
+
+        }
+        Else {
+            $proc = Start-Process -Filepath $Path -ArgumentList "/S /SILENT /VERYSILENT /NORESTART" -PassThru
+            Wait-Process -InputObject $proc
+
+            If ($proc.ExitCode -ne 0) {
+                Write-Warning "$($Name) was not uninstalled, exited with error code $($proc.ExitCode)."
+                Write-Output "`r"
+        
+            }
+            Else {
+                Write-Output "$($Name) was uninstalled successfully, exited with error code $($proc.ExitCode)."
+                Write-Output "`r"
+
+        
+            }
+        }
+
     }
 
 }
@@ -155,8 +178,6 @@ If ($list -And $name -And !$help -And !$id -And !$uninstall) {
         }
     }
     
-    #Write-Output "in name"
-
 }
 
 If ($list -And $id -And !$help -And !$name -And !$uninstall -Or $list -And $name -And $id -And !$uninstall) {
@@ -174,8 +195,6 @@ If ($list -And $id -And !$help -And !$name -And !$uninstall -Or $list -And $name
         
     }
     
-    #Write-Output "in id"
-
 }
 
 If ($list -And $name -And $uninstall -And !$help -Or $list -And $id -And $uninstall -And !$help) {
@@ -194,7 +213,6 @@ If ($list -And $name -And $uninstall -And !$help -Or $list -And $id -And $uninst
     }
 
     Uninstall $AppDetails.Name $AppDetails.ID $AppDetails.Version $AppDetails.UninstallString
-    #write-output "in uninstall"
 }
 
 If (!$list -And !$name -And $help) {
