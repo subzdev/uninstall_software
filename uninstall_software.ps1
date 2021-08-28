@@ -2,11 +2,12 @@
 .Synopsis
    Allows listing, finding and uninstalling most software on Windows. There will be a best effort to uninstall silently if the silent
   uninstall string is not provided.
+  
 .DESCRIPTION
   Allows listing, finding and uninstalling most software on Windows. There will be a best effort to uninstall silently if the silent
   uninstall string is not provided.
+  
 .INPUTS
-
 The following script arguments are available:
          -help                   What you are reading now
          -list                   Show all installed software
@@ -20,6 +21,7 @@ Examples:
          -list -name 'Tactical RMM Agent'
          -list -name 'Tactical RMM Agent' -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1'
          -list -name 'Tactical RMM Agent' -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1' -uninstall
+         
   .NOTES
   See https://github.com/subzdev/uninstall_software/blob/main/uninstall_software.ps1 . If you have extra additions please feel free to contribute and create PR
   v2.0 - 8/27/2021
