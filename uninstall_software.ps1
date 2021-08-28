@@ -22,7 +22,7 @@ Examples:
          -list -name 'Tactical RMM Agent' -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1' -uninstall
   .NOTES
   See https://github.com/subzdev/uninstall_software/blob/main/uninstall_software.ps1 . If you have extra additions please feel free to contribute and create PR
-  v2.0 - 8/27/2021 Initial release
+  v2.0 - 8/27/2021
 #>
 
 [CmdletBinding()]
