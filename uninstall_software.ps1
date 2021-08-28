@@ -6,11 +6,6 @@
   Allows listing, finding and uninstalling most software on Windows. There will be a best effort to uninstall silently if the silent
   uninstall string is not provided.
 .INPUTS
-  -list Will list all installed 32-bit and 64-bit software installed on the target machine.
-  -list "<software name>" will find a particular application installed giving you the uninstall string and quiet uninstall string if it exists
-  -list "<software name>" -u "<uninstall string>" will allow you to uninstall the software from the Windows machine silently
-  -list "<software name>" -u "<quiet uninstall string>" will allow you to uninstall the software from the Windows machine silently
-.HELP
   -help
 The following script arguments are available:
          -list                   Show all installed software
