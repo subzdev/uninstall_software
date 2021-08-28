@@ -10,7 +10,7 @@
 .INPUTS
 The following script arguments are available:
          -help                   What you are reading now
-         -list                   Show all installed software
+         -list                   Show all software that has best effort to be uninstalled by script
          -name                   Filter installed software by specified name
          -id                     Filter installed software by ID
          -uninstall              Uninstall a specific software based on ID
@@ -19,7 +19,7 @@ Examples:
          -list Microsoft
          -list -name 'Tactical RMM Agent'
          -list -name 'Tactical RMM Agent' -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1'
-         -list -name 'Tactical RMM Agent' -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1' -uninstall
+         -list -uninstall -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1'
          
   .NOTES
   See https://github.com/subzdev/uninstall_software/blob/main/uninstall_software.ps1 . If you have extra additions please feel free to contribute and create PR
@@ -217,7 +217,7 @@ If ($list -And $name -And $uninstall -And !$help -Or $list -And $id -And $uninst
 If (!$list -And !$name -And $help) {
     Write-Output "`r"
     Write-Output "The following script arguments are available:"
-    Write-Output "`t -list `t `t `t Show all software that can be uninstalled by script"
+    Write-Output "`t -list `t `t `t Show all software that has best effort to be uninstalled by script"
     Write-Output "`t -name `t `t `t Filter installed software by specified name"
     Write-Output "`t -id `t `t `t Filter installed software by ID"
     Write-Output "`t -uninstall `t `t Uninstall a specific software based on ID"
