@@ -35,16 +35,19 @@ param(
     [string]$id
 )
 
-$Paths = @("HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*", "HKLM:\SOFTWARE\\Wow6432node\Microsoft\Windows\CurrentVersion\Uninstall\*")
+$Paths = @("HKU:\*\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*", "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*", "HKLM:\SOFTWARE\\Wow6432node\Microsoft\Windows\CurrentVersion\Uninstall\*")
+$null = New-PSDrive -Name HKU -PSProvider Registry -Root Registry::HKEY_USERS
+
 
 $ApplicationsObj = New-Object System.Collections.ArrayList
 
 $Applications = ForEach ($Application in Get-ItemProperty $Paths | Sort-Object DisplayName) {
-    If ($Application.UninstallString -Match "msi" -Or $Application.QuietUninstallString -Match "msi" -Or $Application.UninstallString -Match '"' -Or $Application.QuietUninstallString -Match '"') {
+    If ($Application.UninstallString -Match "msi" -And !$Application.SystemComponent -Or $Application.QuietUninstallString -Match "msi" -And !$Application.SystemComponent -Or $Application.UninstallString -Match '"' -And !$Application.SystemComponent -Or $Application.QuietUninstallString -Match '"' -And !$Application.SystemComponent) {
         Write-Output $Application
-        
     }
 }
+
+
 Function GetApplications {
     for ($i = 0; $i -le $Applications.Count - 1; $i++) {
         $UninstallString = If ($Applications.QuietUninstallString[$i]) { $Applications.QuietUninstallString[$i] } Else { $Applications.UninstallString[$i] }
@@ -53,6 +56,7 @@ Function GetApplications {
             'Name'            = $Applications.DisplayName[$i]
             'ID'              = $Applications.PSChildName[$i]
             'Version'         = $Version
+            'Size'            = $Version
             'UninstallString' = $UninstallString
         }
         $ApplicationsObj.Add($ResultObject) | Out-Null
