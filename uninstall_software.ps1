@@ -10,11 +10,10 @@
 .INPUTS
 The following script arguments are available:
          -help                   What you are reading now
-         -list                   Show all installed software
+         -list                   Show all software that can be uninstalled by script
          -name                   Filter installed software by specified name
          -id                     Filter installed software by ID
          -uninstall              Uninstall a specific software based on ID
-
 Examples:
          -list
          -list Microsoft
@@ -41,12 +40,12 @@ $Paths = @("HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*", "HKLM:
 $ApplicationsObj = New-Object System.Collections.ArrayList
 
 $Applications = ForEach ($Application in Get-ItemProperty $Paths | Sort-Object DisplayName) {
-    If ($Application.UninstallString -Or $Application.QuietUninstallString) {
+    If ($Application.UninstallString -Match "msi" -Or $Application.QuietUninstallString -Match "msi" -Or $Application.UninstallString -Match "msi" -Or $Application.QuietUninstallString -Match '"') {
         Write-Output $Application
         
     }
 }
-
+write-output $Applications.UninstallString
 Function GetApplications {
     for ($i = 0; $i -le $Applications.Count - 1; $i++) {
         $UninstallString = If ($Applications.QuietUninstallString[$i]) { $Applications.QuietUninstallString[$i] } Else { $Applications.UninstallString[$i] }
@@ -202,7 +201,7 @@ If ($list -And $name -And $uninstall -And !$help -Or $list -And $id -And $uninst
 If (!$list -And !$name -And $help) {
     Write-Output "`r"
     Write-Output "The following script arguments are available:"
-    Write-Output "`t -list `t `t `t Show all installed software"
+    Write-Output "`t -list `t `t `t Show all software that can be uninstalled by script"
     Write-Output "`t -name `t `t `t Filter installed software by specified name"
     Write-Output "`t -id `t `t `t Filter installed software by ID"
     Write-Output "`t -uninstall `t `t Uninstall a specific software based on ID"
