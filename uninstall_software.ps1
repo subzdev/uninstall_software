@@ -84,7 +84,7 @@ Function Get-UninstallStatus ($App) {
 
         }
 
-    }Until(!$UninstallProcess -Or !$UninstallTest)
+    }Until(!$UninstallProcess -Or !$AllUsersAppUninstall)
     
     If ($AllUsersAppUninstall) {
         If ($proc.ExitCode) {
