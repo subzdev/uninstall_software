@@ -181,3 +181,15 @@ If ($id -And $uninstall -And !$force) {
     Uninstall-Application $App $UninstallString
 
 }
+If ($help -And !$id -And !$uninstall -And !$force) {
+    Write-Output "`r"
+    Write-Output "The following script arguments are available:"
+    Write-Output "`t -id `t `t `t Filter installed software by ID"
+    Write-Output "`t -id -uninstall `t Uninstall a specific software based on ID"
+    Write-Output "`r"
+    Write-Output "Examples:"
+    Write-Output "`t -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1'"
+    Write-Output "`t -uninstall -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1'"
+    Write-Output "`r"
+    Write-Output "`r"
+}
