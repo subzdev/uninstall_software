@@ -182,20 +182,20 @@ Function Uninstall-Application($App, $UninstallString) {
 
 }
 
-If (!$id -And !$uninstall -And !$force) {
+If (!$help -And !$id -And !$uninstall -And !$force) {
     
     $Apps = Get-Applications
     Write-Output "$(($ApplicationsObj | Measure-Object).Count) results"
     $Apps
 
 }
-If ($id -And !$uninstall -And !$force) {
+If (!$help -And $id -And !$uninstall -And !$force) {
     Get-Applications | Out-Null
     $App = Get-Application
     $App | Sort-Object DisplayName | Format-List -Property @{L = "Name"; E = { $_.DisplayName } }, @{L = "ID"; E = { $_.PSChildName } }, @{L = "Version"; E = { $_.DisplayVersion } }, @{L = "UninstallString"; E = { If ($_.QuietUninstallString) { $_.QuietUninstallString } Else { $_.UninstallString } } }
 
 }
-If ($id -And $uninstall -And !$force) {
+If (!$help -And $id -And $uninstall -And !$force) {
     Get-Applications | Out-Null
     $App = Get-Application
     $UninstallString = If ($App.QuietUninstallString) { $App.QuietUninstallString } Else { $App.UninstallString }
