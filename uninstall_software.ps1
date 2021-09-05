@@ -1,237 +1,282 @@
-<#
-.Synopsis
-   Allows listing, finding and uninstalling most software on Windows. There will be a best effort to uninstall silently if the silent
-  uninstall string is not provided.
-  
-.DESCRIPTION
-  Allows listing, finding and uninstalling most software on Windows. There will be a best effort to uninstall silently if the silent
-  uninstall string is not provided.
-  
-.INPUTS
-The following script arguments are available:
-         -help                   What you are reading now
-         -list                   Show all installed software
-         -name                   Filter installed software by specified name
-         -id                     Filter installed software by ID
-         -uninstall              Uninstall a specific software based on ID
-Examples:
-         -list
-         -list Microsoft
-         -list -name 'Tactical RMM Agent'
-         -list -name 'Tactical RMM Agent' -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1'
-         -list -name 'Tactical RMM Agent' -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1' -uninstall
-         
-  .NOTES
-  See https://github.com/subzdev/uninstall_software/blob/main/uninstall_software.ps1 . If you have extra additions please feel free to contribute and create PR
-  v2.0 - 8/27/2021
-#>
-
 [CmdletBinding()]
 param(
     [switch]$help,
-    [switch]$list,
-    [string]$name,
+    # [switch]$list,
+    [string]$id,
     [switch]$uninstall,
-    [string]$id
+    [switch]$force
 )
+# $ErrorActionPreference = 'silentlycontinue'
+$UsernameObj = (Get-CimInstance -ClassName Win32_ComputerSystem | Select-Object username).username -Split "\\"
+$Username = $UsernameObj[1]
+$SID = (Get-WmiObject -Class Win32_UserAccount -Filter "Domain = '$env:userdomain' AND Name = '$Username'").SID
 
-$Paths = @("HKU:\*\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*", "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*", "HKLM:\SOFTWARE\\Wow6432node\Microsoft\Windows\CurrentVersion\Uninstall\*")
-$null = New-PSDrive -Name HKU -PSProvider Registry -Root Registry::HKEY_USERS
-
-
+$UserAppsPath = Get-ItemProperty Registry::\HKEY_USERS\$SID\software\microsoft\windows\currentversion\uninstall\*
+$AllUsersAppsPaths = @("HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*", "HKLM:\SOFTWARE\\Wow6432node\Microsoft\Windows\CurrentVersion\Uninstall\*")
 $ApplicationsObj = New-Object System.Collections.ArrayList
 
-$Applications = ForEach ($Application in Get-ItemProperty $Paths | Sort-Object DisplayName) {
-    If ($Application.UninstallString -Match "msi" -And !$Application.SystemComponent -Or $Application.QuietUninstallString -Match "msi" -And !$Application.SystemComponent -Or $Application.UninstallString -Match '"' -And !$Application.SystemComponent -Or $Application.QuietUninstallString -Match '"' -And !$Application.SystemComponent) {
-        Write-Output $Application
+Function Get-Applications {
+    ForEach ($App in $UserAppsPath) {
+        
+        $ApplicationsObj.Add($App) | Out-Null
     }
-}
 
-
-Function GetApplications {
-    for ($i = 0; $i -le $Applications.Count - 1; $i++) {
-        $UninstallString = If ($Applications.QuietUninstallString[$i]) { $Applications.QuietUninstallString[$i] } Else { $Applications.UninstallString[$i] }
-        $Version = If ($Applications.DisplayVersion[$i]) { $Applications.DisplayVersion[$i] } Else { "Unknown" }
-        $ResultObject = [PSCustomObject] @{
-            'Name'            = $Applications.DisplayName[$i]
-            'ID'              = $Applications.PSChildName[$i]
-            'Version'         = $Version
-            'Size'            = $Version
-            'UninstallString' = $UninstallString
+    ForEach ($App in Get-ItemProperty $AllUsersAppsPaths) {
+        If (!$App.SystemComponent -And $App.UninstallString) {
+            
+            $ApplicationsObj.Add($App) | Out-Null
         }
-        $ApplicationsObj.Add($ResultObject) | Out-Null
+    }
+
+    $ApplicationsObj | Sort-Object DisplayName | Format-Table -Property @{L = "Name"; E = { $_.DisplayName } }, @{L = "ID"; E = { $_.PSChildName } }, @{L = "Version"; E = { $_.DisplayVersion } }, @{L = "ustring"; E = { $_.UninstallString } }
+}
+
+Function Get-Application {
+    ForEach ($App in $Applicationsobj) {
+        If ($App.PsChildName -eq $id) {
+            Return $App
+        }
     }
 }
 
-Function Uninstall($Name, $ID, $Version, $UninstallString) {
-    Write-Output "Found $($Name) [$($ID)]"
-    Write-Output "Attempting software uninstall..."
-    Write-Output "`r"
-    If ($UninstallString -iMatch "msiexec") {
-        $UninstallStringSplit = $UninstallString -Split ('"')
-        $Path = $UninstallStringSplit[1]
-        $Arguments = $UninstallStringSplit[2]
-        If ($Arguments) {
-            $UninstallArguments = $Arguments -Replace "MsiExec.exe /I", "/X" -Replace "MsiExec.exe ", "" -Replace "msiexec.exe /i", "/X"
-            $proc = Start-Process msiexec.exe -ArgumentList "$UninstallArguments /quiet /norestart" -PassThru
-            Wait-Process -InputObject $proc
+Function Get-UninstallStatus() {
+    $AllUsersAppUninstall = Get-ItemProperty $AllUsersAppsPaths | Where-object { $_.PSChildName -match $id }
+    Return $AllUsersAppUninstall
+}
 
-            If ($proc.ExitCode -ne 0) {
-                Write-Warning "$($Name) was not uninstalled, exited with error code $($proc.ExitCode)."
-                Write-Output "`r"
-        
-            }
-            Else {
-                Write-Output "$($Name) was uninstalled successfully, exited with error code $($proc.ExitCode)."
-                Write-Output "`r"
+Function Get-UninstallProcess {
+    start-sleep 1
+                    
+    $procsWithParent = Get-WmiObject -ClassName "win32_process" | Select-Object ProcessId, ParentProcessId
+    $orphaned = $procsWithParent | Where-Object -Property ParentProcessId -NotIn $procsWithParent.ProcessId
+    # $UninstallProcesses = Get-Process | Where-Object -Property Id -In $orphaned.ProcessId
+    $nowtime = get-date
+    $p = ForEach ($Process in Get-Process | Where-Object -Property Id -In $orphaned.ProcessId) {
+        If (($nowtime - $Process.StartTime).totalSeconds -le 5) {
+            $Process.ID
+        }
+    }
 
-                
+    Do {
+        $UninstallTest = Get-UninstallStatus
         
-            }
+        If ($p) {
+            $UninstallProcess = Get-Process -Id $p
+            
+
         }
         Else {
-            $UninstallArguments = $UninstallString -Replace "MsiExec.exe /I", "/X" -Replace "MsiExec.exe ", "" -Replace "msiexec.exe /i", "/X"
-            $proc = Start-Process -FilePath msiexec.exe -ArgumentList "$UninstallArguments /quiet /norestart" -PassThru
+            $UninstallProcess = Get-Process -Id $proc.Id
+            
+        }
+
+    }Until(!$UninstallProcess -Or !$UninstallTest)
+}
+
+Function Uninstall-Application($App, $UninstallString) {
+    If ($App) {
+        $SilentUninstallArguments = "/S /SILENT /VERYSILENT /NORESTART"
+        Write-Output "Found $($App.DisplayName) [$($App.PSChildName)]"
+        Write-Output "Attempting best effort silent uninstall..."
+        Write-Output "`r"
+
+        If ($App.WindowsInstaller) {
+            $MsiArguments = $UninstallString -Replace "MsiExec.exe /I", "/X" -Replace "MsiExec.exe ", ""
+
+            $proc = Start-Process -FilePath msiexec -ArgumentList "$MsiArguments /quiet" -PassThru
             Wait-Process -InputObject $proc
 
-            If ($proc.ExitCode -ne 0) {
-                Write-Warning "$($Name) was not uninstalled, exited with error code $($proc.ExitCode)."
-                Write-Output "`r"
-        
+            Get-UninstallProcess
+            Start-Sleep 3
+            $Uninstalled = Get-UninstallStatus
+            If ($Uninstalled) {
+                If ($proc.ExitCode) {
+                    Write-Warning "$($App.DisplayName) was not uninstalled, exited with error code $($proc.ExitCode)."
+                    Write-Output "`r"
+                    # Stop-Process -Name $proc.ProcessName -Force -ErrorAction 'SilentlyContinue'                    
+                }
+                Else {
+                    Write-Warning "$($App.DisplayName) was not uninstalled, no error code was provided."
+                    Write-Output "`r"
+                    # Stop-Process -Name $proc.ProcessName -Force -ErrorAction 'SilentlyContinue' 
+                }
+            
             }
             Else {
-                Write-Output "$($Name) was uninstalled successfully, exited with error code $($proc.ExitCode)."
+                Write-Output "$($App.DisplayName) was uninstalled successfully."
                 Write-Output "`r"
+                # Stop-Process -Name $proc.ProcessName -Force -ErrorAction 'SilentlyContinue'
+            
+            }
+        }
 
-        
+        If (!$App.WindowsInstaller) {
+            If ($UninstallString -Match '"') {
+                $UninstallStringObj = $UninstallString -Split ('"')
+                $Path = $UninstallStringObj[1].Trim()
+                $ArgumentsObj = for ($i = 2; $i -le $UninstallStringObj.Count - 1; $i++) { $UninstallStringObj[$i] }
+                $Arguments = $ArgumentsObj.Trim()
+
+            }
+            ElseIf ($UninstallString -NotMatch '"') {
+
+                $UninstallStringObj = $UninstallString.IndexOf("/")
+                If ($UninstallStringObj -eq -1) {
+                    $Path = $UninstallString
+                }
+                Else {
+                    $Path = $UninstallString.Substring(0, $UninstallStringObj)
+                    $ArgumentsObj = $UninstallString.Substring($UninstallStringObj + 1)
+                    $Arguments = "/" + $ArgumentsObj
+                }
+
+                
+    
+            }
+
+            If ($UninstallString -Match '"' -And !$Arguments) {
+                Write-Output "quotes no args"
+                $proc = Start-Process -FilePath $Path -ArgumentList $($SilentUninstallArguments) -PassThru
+                Wait-Process -InputObject $proc
+
+                Get-UninstallProcess
+                Start-Sleep 3
+                $Uninstalled = Get-UninstallStatus
+                If ($Uninstalled) {
+                    If ($proc.ExitCode) {
+                        Write-Warning "$($App.DisplayName) was not uninstalled, exited with error code $($proc.ExitCode)."
+                        Write-Output "`r"
+                        # Stop-Process -Name $proc.ProcessName -Force -ErrorAction 'SilentlyContinue'                    
+                    }
+                    Else {
+                        Write-Warning "$($App.DisplayName) was not uninstalled, no error code was provided."
+                        Write-Output "`r"
+                        # Stop-Process -Name $proc.ProcessName -Force -ErrorAction 'SilentlyContinue' 
+                    }
+                
+                }
+                Else {
+                    Write-Output "$($App.DisplayName) was uninstalled successfully."
+                    Write-Output "`r"
+                    # Stop-Process -Name $proc.ProcessName -Force -ErrorAction 'SilentlyContinue'
+                
+                }
+            }
+            ElseIf ($UninstallString -Match '"' -And $Arguments) {
+                write-output "quotes args"
+                $proc = Start-Process -Filepath $Path -ArgumentList $Arguments -PassThru
+                Wait-Process -InputObject $proc
+
+                Get-UninstallProcess
+                Start-Sleep 3
+                $Uninstalled = Get-UninstallStatus
+                If ($Uninstalled) {
+                    If ($proc.ExitCode) {
+                        Write-Warning "$($App.DisplayName) was not uninstalled, exited with error code $($proc.ExitCode)."
+                        Write-Output "`r"
+                        # Stop-Process -Name $proc.ProcessName -Force -ErrorAction 'SilentlyContinue'                    
+                    }
+                    Else {
+                        Write-Warning "$($App.DisplayName) was not uninstalled, no error code was provided."
+                        Write-Output "`r"
+                        # Stop-Process -Name $proc.ProcessName -Force -ErrorAction 'SilentlyContinue' 
+                    }
+                
+                }
+                Else {
+                    Write-Output "$($App.DisplayName) was uninstalled successfully."
+                    Write-Output "`r"
+                    # Stop-Process -Name $proc.ProcessName -Force -ErrorAction 'SilentlyContinue'
+                
+                }
+            }
+            ElseIf ($uninstallString -NotMatch '"' -And $Arguments) {
+                Write-Output "no quotes args"
+
+                $proc = Start-Process -Filepath $Path -PassThru
+                Wait-Process -InputObject $proc
+
+                Get-UninstallProcess
+                Start-Sleep 3
+                $Uninstalled = Get-UninstallStatus
+                If ($Uninstalled) {
+                    If ($proc.ExitCode) {
+                        Write-Warning "$($App.DisplayName) was not uninstalled, exited with error code $($proc.ExitCode)."
+                        Write-Output "`r"
+                        # Stop-Process -Name $proc.ProcessName -Force -ErrorAction 'SilentlyContinue'                    
+                    }
+                    Else {
+                        Write-Warning "$($App.DisplayName) was not uninstalled, no error code was provided."
+                        Write-Output "`r"
+                        # Stop-Process -Name $proc.ProcessName -Force -ErrorAction 'SilentlyContinue' 
+                    }
+                
+                }
+                Else {
+                    Write-Output "$($App.DisplayName) was uninstalled successfully."
+                    Write-Output "`r"
+                    # Stop-Process -Name $proc.ProcessName -Force -ErrorAction 'SilentlyContinue'
+                
+                }
+                
+            
+            }
+            ElseIf ($uninstallString -NotMatch '"' -And !$Arguments) {
+                
+                Write-Output "no quotes no args"
+                $proc = Start-Process -Filepath $UninstallString -ArgumentList $($SilentUninstallArguments) -PassThru
+                Wait-Process -InputObject $proc
+
+                Get-UninstallProcess
+                Start-Sleep 3
+                $Uninstalled = Get-UninstallStatus
+                If ($Uninstalled) {
+                    If ($proc.ExitCode) {
+                        Write-Warning "$($App.DisplayName) was not uninstalled, exited with error code $($proc.ExitCode)."
+                        Write-Output "`r"
+                        # Stop-Process -Name $proc.ProcessName -Force -ErrorAction 'SilentlyContinue'                    
+                    }
+                    Else {
+                        Write-Warning "$($App.DisplayName) was not uninstalled, no error code was provided."
+                        Write-Output "`r"
+                        # Stop-Process -Name $proc.ProcessName -Force -ErrorAction 'SilentlyContinue' 
+                    }
+                
+                }
+                Else {
+                    Write-Output "$($App.DisplayName) was uninstalled successfully."
+                    Write-Output "`r"
+                    # Stop-Process -Name $proc.ProcessName -Force -ErrorAction 'SilentlyContinue'
+                
+                }
             }
         }
 
     }
     Else {
-        $UninstallStringSplit = $UninstallString -Split ('"')
-        $Path = $UninstallStringSplit[1]
-        $Arguments = $UninstallStringSplit[2]
-        If ($Arguments) {
-            $proc = Start-Process -Filepath $Path -ArgumentList $Arguments -PassThru
-            Wait-Process -InputObject $proc
 
-            If ($proc.ExitCode -ne 0) {
-                Write-Warning "$($Name) was not uninstalled, exited with error code $($proc.ExitCode)."
-                Write-Output "`r"
-        
-            }
-            Else {
-                Write-Output "$($Name) was uninstalled successfully, exited with error code $($proc.ExitCode)."
-                Write-Output "`r"
-
-        
-            }
-
-        }
-        Else {
-            $proc = Start-Process -Filepath $Path -ArgumentList "/S /SILENT /VERYSILENT /NORESTART" -PassThru
-            Wait-Process -InputObject $proc
-
-            If ($proc.ExitCode -ne 0) {
-                Write-Warning "$($Name) was not uninstalled, exited with error code $($proc.ExitCode)."
-                Write-Output "`r"
-        
-            }
-            Else {
-                Write-Output "$($Name) was uninstalled successfully, exited with error code $($proc.ExitCode)."
-                Write-Output "`r"
-
-        
-            }
-        }
-
+        Write-Output "App doesn't exist."
     }
 
 }
 
-GetApplications
-
-If ($list -And !$help -And !$name -And !$id -And !$uninstall) {
+If (!$id -And !$uninstall -And !$force) {
     
-    ForEach ($App in $ApplicationsObj) {
-        If ($App.Name -iMatch $name) {
-            $AppDetails = [PSCustomObject] @{
-                'Name'    = If ($App.Name.Length -gt 64) { $App.Name.SubString(0, [System.Math]::Min(64, $App.Name.Length)) + "..." }Else { $App.Name }
-                'ID'      = $App.ID
-                'Version' = $App.Version
+    $Apps = Get-Applications
+    Write-Output "$(($ApplicationsObj | Measure-Object).Count) results"
+    $Apps
 
-            }
-
-            Write-Output $AppDetails
-        }
-    }
 }
+If ($id -And !$uninstall -And !$force) {
+    Get-Applications | Out-Null
+    $App = Get-Application
+    $App | Sort-Object DisplayName | Format-List -Property @{L = "Name"; E = { $_.DisplayName } }, @{L = "ID"; E = { $_.PSChildName } }, @{L = "Version"; E = { $_.DisplayVersion } }, @{L = "UninstallString"; E = { If ($_.QuietUninstallString) { $_.QuietUninstallString } Else { $_.UninstallString } } }
 
-If ($list -And $name -And !$help -And !$id -And !$uninstall) {
-    ForEach ($App in $ApplicationsObj) {
-        If ($App.Name -Match $name) {
-            $AppDetails = [PSCustomObject] @{
-                'Name'    = If ($App.Name.Length -gt 64) { $App.Name.SubString(0, [System.Math]::Min(64, $App.Name.Length)) + "..." }Else { $App.Name }
-                'ID'      = $App.ID
-                'Version' = $App.Version
-            }
-
-            Write-Output $AppDetails
-        }
-    }
-    
 }
+If ($id -And $uninstall -And !$force) {
+    Get-Applications | Out-Null
+    $App = Get-Application
+    $UninstallString = If ($App.QuietUninstallString) { $App.QuietUninstallString } Else { $App.UninstallString }
+    Uninstall-Application $App $UninstallString
 
-If ($list -And $id -And !$help -And !$name -And !$uninstall -Or $list -And $name -And $id -And !$uninstall) {
-    ForEach ($App in $ApplicationsObj) {
-        If ($App.ID -eq $id) {
-            $AppDetails = [PSCustomObject] @{
-                'Name'            = If ($App.Name.Length -gt 64) { $App.Name.SubString(0, [System.Math]::Min(64, $App.Name.Length)) + "..." }Else { $App.Name }
-                'ID'              = $App.ID
-                'Version'         = $App.Version
-                'UninstallString' = $App.UninstallString
-            }
-
-            Write-Output $AppDetails | Format-List
-        }
-        
-    }
-    
-}
-
-If ($list -And $name -And $uninstall -And !$help -Or $list -And $id -And $uninstall -And !$help) {
-    ForEach ($App in $ApplicationsObj) {
-        If ($App.ID -eq $id) {
-            $AppDetails = [PSCustomObject] @{
-                'Name'            = If ($App.Name.Length -gt 64) { $App.Name.SubString(0, [System.Math]::Min(64, $App.Name.Length)) + "..." }Else { $App.Name }
-                'ID'              = $App.ID
-                'Version'         = $App.Version
-                'UninstallString' = $App.UninstallString
-            }
-
-            #Write-Output $AppDetails | Format-List
-        }
-        
-    }
-
-    Uninstall $AppDetails.Name $AppDetails.ID $AppDetails.Version $AppDetails.UninstallString
-}
-
-If (!$list -And !$name -And $help) {
-    Write-Output "`r"
-    Write-Output "The following script arguments are available:"
-    Write-Output "`t -list `t `t `t Show all software that can be uninstalled by script"
-    Write-Output "`t -name `t `t `t Filter installed software by specified name"
-    Write-Output "`t -id `t `t `t Filter installed software by ID"
-    Write-Output "`t -uninstall `t `t Uninstall a specific software based on ID"
-    Write-Output "`r"
-    Write-Output "Examples:"
-    Write-Output "`t -list"
-    Write-Output "`t -list Microsoft"
-    Write-Output "`t -list -name 'Tactical RMM Agent'"
-    Write-Output "`t -list -name 'Tactical RMM Agent' -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1'"
-    Write-Output "`t -list -uninstall -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1'"
-    Write-Output "`r"
-    Write-Output "`r"
 }
