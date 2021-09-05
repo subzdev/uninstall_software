@@ -1,9 +1,9 @@
 <#
 .Synopsis
-Allows listing, finding and uninstalling most software on Windows. There will be a best effort to uninstall silently if there is no silent uninstall string provided.
+Allows listing and uninstalling most software on Windows. There will be a best effort to uninstall silently if there is no silent uninstall string provided.
   
 .DESCRIPTION
-Allows listing, finding and uninstalling most software on Windows. There will be a best effort to uninstall silently if there is no silent uninstall string provided.
+Allows listing and uninstalling most software on Windows. There will be a best effort to uninstall silently if there is no silent uninstall string provided.
 
 .INPUTS
 The following script arguments are available:
