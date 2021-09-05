@@ -14,9 +14,9 @@ Examples:
          -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1'
          -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1' -uninstall
          
-  .NOTES
-  See https://github.com/subzdev/uninstall_software/blob/main/uninstall_software.ps1 . If you have extra additions please feel free to contribute and create PR
-  v3.0 - 9/5/2021
+.NOTES
+See https://github.com/subzdev/uninstall_software/blob/main/uninstall_software.ps1 . If you have extra additions please feel free to contribute and create PR
+v3.0 - 9/5/2021
 #>
 
 [CmdletBinding()]
