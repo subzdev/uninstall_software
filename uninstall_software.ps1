@@ -26,7 +26,7 @@ param(
     [switch]$uninstall,
     [switch]$force
 )
-# $ErrorActionPreference = 'silentlycontinue'
+$ErrorActionPreference = 'silentlycontinue'
 $UsernameObj = (Get-CimInstance -ClassName Win32_ComputerSystem | Select-Object username).username -Split "\\"
 $Username = $UsernameObj[1]
 $SID = (Get-WmiObject -Class Win32_UserAccount -Filter "Domain = '$env:userdomain' AND Name = '$Username'").SID
