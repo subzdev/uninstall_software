@@ -1,3 +1,24 @@
+<#
+.Synopsis
+Allows listing, finding and uninstalling most software on Windows. There will be a best effort to uninstall silently if there is no silent uninstall string provided.
+  
+.DESCRIPTION
+Allows listing, finding and uninstalling most software on Windows. There will be a best effort to uninstall silently if there is no silent uninstall string provided.
+
+.INPUTS
+The following script arguments are available:
+         -help                   What you are reading now
+         -id                     Filter installed software by ID
+         -uninstall              Uninstall a specific software based on ID
+Examples:
+         -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1'
+         -id '{0D34D278-5FAF-4159-A4A0-4E2D2C08139D}_is1' -uninstall
+         
+  .NOTES
+  See https://github.com/subzdev/uninstall_software/blob/main/uninstall_software.ps1 . If you have extra additions please feel free to contribute and create PR
+  v3.0 - 9/5/2021
+#>
+
 [CmdletBinding()]
 param(
     [switch]$help,
@@ -184,6 +205,7 @@ If ($id -And $uninstall -And !$force) {
 If ($help -And !$id -And !$uninstall -And !$force) {
     Write-Output "`r"
     Write-Output "The following script arguments are available:"
+    Write-Output "`t -help `t `t `t What you are reading now"
     Write-Output "`t -id `t `t `t Filter installed software by ID"
     Write-Output "`t -id -uninstall `t Uninstall a specific software based on ID"
     Write-Output "`r"
