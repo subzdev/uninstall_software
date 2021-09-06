@@ -61,7 +61,7 @@ Function Get-Application {
 
 Function Get-UninstallStatus ($App) {
     Start-Sleep 1
-                    
+
     $procsWithParent = Get-WmiObject -ClassName "win32_process" | Select-Object ProcessId, ParentProcessId
     $orphaned = $procsWithParent | Where-Object -Property ParentProcessId -NotIn $procsWithParent.ProcessId
     $nowtime = get-date
@@ -74,16 +74,6 @@ Function Get-UninstallStatus ($App) {
 
     Do {
 
-        If ($Apps.DisplayName) {
-            $found = $true
-            Get-Applications | Out-Null
-            $Apps = Get-Application
-            
-        }
-        Else {
-            $found = $false
-        }
-
         If ($p) {
             $UninstallProcess = Get-Process -Id $p
 
@@ -93,7 +83,7 @@ Function Get-UninstallStatus ($App) {
 
         }
 
-    }Until(!$found -And !$UninstallProcess)
+    }Until(!$UninstallProcess)
 
     If ($proc.ExitCode -ne 0) {
         If ($proc.ExitCode) {
