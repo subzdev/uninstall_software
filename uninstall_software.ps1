@@ -73,7 +73,6 @@ Function Get-UninstallStatus ($App) {
     }
 
     Do {
-
         If ($p) {
             $UninstallProcess = Get-Process -Id $p
 
@@ -82,7 +81,6 @@ Function Get-UninstallStatus ($App) {
             $UninstallProcess = Get-Process -Id $proc.Id
 
         }
-
     }Until(!$UninstallProcess)
 
     If ($proc.ExitCode -ne 0) {
