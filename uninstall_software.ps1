@@ -59,29 +59,44 @@ Function Get-Application {
     }
 }
 
-Function Get-UninstallStatus ($App) {
+Function Get-UninstallStatus ($App, $proc) {
+    Wait-Process -InputObject $proc
     Start-Sleep 1
 
     $procsWithParent = Get-WmiObject -ClassName "win32_process" | Select-Object ProcessId, ParentProcessId
     $orphaned = $procsWithParent | Where-Object -Property ParentProcessId -NotIn $procsWithParent.ProcessId
     $nowtime = get-date
+
     $p = ForEach ($Process in Get-Process | Where-Object -Property Id -In $orphaned.ProcessId) {
         If (($nowtime - $Process.StartTime).totalSeconds -le 5) {
             $Process.ID
 
         }
+
     }
 
-    Do {
-        If ($p) {
-            $UninstallProcess = Get-Process -Id $p
+$p
 
+        If ($p) {
+            Do {
+            $UninstallProcess = Get-Process -Id $p
+            $UninstallProcess
+            $cpu = If ($UninstallProcess.cpu -lt 0.5) {
+                Write-Output "first less"
+            }}
+            Until(!$UninstallProcess)
         }
         Else {
+            Do {
             $UninstallProcess = Get-Process -Id $proc.Id
+            $UninstallProcess
+            $cpu = If ($UninstallProcess.cpu -lt 0.5) {
+                Write-Output "first less"
 
+            }
+        }Until(!$UninstallProcess -Or $cpu)
         }
-    }Until(!$UninstallProcess)
+    
 
     If ($proc.ExitCode -ne 0) {
         If ($proc.ExitCode) {
@@ -111,9 +126,7 @@ Function Uninstall-Application($App, $UninstallString) {
             $MsiArguments = $UninstallString -Replace "MsiExec.exe /I", "/X" -Replace "MsiExec.exe ", ""
 
             $proc = Start-Process -FilePath msiexec -ArgumentList "$MsiArguments /quiet" -PassThru
-            Wait-Process -InputObject $proc
-            Start-Sleep 3
-            Get-UninstallStatus $App
+            Get-UninstallStatus $App $proc
 
         }
 
@@ -141,30 +154,23 @@ Function Uninstall-Application($App, $UninstallString) {
 
             If ($UninstallString -Match '"' -And !$Arguments) {
                 $proc = Start-Process -FilePath $Path -ArgumentList $($SilentUninstallArguments) -PassThru
-                Wait-Process -InputObject $proc
-                Start-Sleep 3
-                Get-UninstallStatus $App
+                Get-UninstallStatus $App $proc
 
             }
             ElseIf ($UninstallString -Match '"' -And $Arguments) {
                 $proc = Start-Process -Filepath $Path -ArgumentList $Arguments -PassThru
-                Wait-Process -InputObject $proc
-                Start-Sleep 3
-                Get-UninstallStatus $App
+                Get-UninstallStatus $App $proc
 
             }
             ElseIf ($uninstallString -NotMatch '"' -And $Arguments) {
-                $proc = Start-Process -Filepath $Path -PassThru
-                Wait-Process -InputObject $proc
-                Start-Sleep 3
-                Get-UninstallStatus $App
+                
+                $proc = Start-Process -Filepath $Path -ArgumentList $Arguments -PassThru
+                Get-UninstallStatus $App $proc
                 
             }
             ElseIf ($uninstallString -NotMatch '"' -And !$Arguments) {
                 $proc = Start-Process -Filepath $UninstallString -ArgumentList $($SilentUninstallArguments) -PassThru
-                Wait-Process -InputObject $proc
-                Start-Sleep 3
-                Get-UninstallStatus $App
+                Get-UninstallStatus $App $proc
             }
         }
 
