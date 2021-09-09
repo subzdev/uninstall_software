@@ -4,7 +4,6 @@ Allows listing and uninstalling most software on Windows. There will be a best e
   
 .DESCRIPTION
 Allows listing and uninstalling most software on Windows. There will be a best effort to uninstall silently if there is no silent uninstall string provided.
-
 .INPUTS
 The following script arguments are available:
          -help                   What you are reading now
@@ -23,7 +22,8 @@ v3.0 - 9/9/2021
 param(
     [switch]$help,
     [string]$id,
-    [switch]$uninstall
+    [switch]$uninstall,
+    [switch]$force
 )
 $ErrorActionPreference = 'silentlycontinue'
 $UsernameObj = (Get-CimInstance -ClassName Win32_ComputerSystem | Select-Object username).username -Split "\\"
@@ -58,44 +58,29 @@ Function Get-Application {
     }
 }
 
-Function Get-UninstallStatus ($App, $proc) {
-    Wait-Process -InputObject $proc
+Function Get-UninstallStatus ($App) {
     Start-Sleep 1
 
     $procsWithParent = Get-WmiObject -ClassName "win32_process" | Select-Object ProcessId, ParentProcessId
     $orphaned = $procsWithParent | Where-Object -Property ParentProcessId -NotIn $procsWithParent.ProcessId
     $nowtime = get-date
-
     $p = ForEach ($Process in Get-Process | Where-Object -Property Id -In $orphaned.ProcessId) {
         If (($nowtime - $Process.StartTime).totalSeconds -le 5) {
             $Process.ID
 
         }
-
     }
 
-$p
-
+    Do {
         If ($p) {
-            Do {
             $UninstallProcess = Get-Process -Id $p
-            $UninstallProcess
-            $cpu = If ($UninstallProcess.cpu -lt 0.5) {
-                Write-Output "first less"
-            }}
-            Until(!$UninstallProcess)
+
         }
         Else {
-            Do {
             $UninstallProcess = Get-Process -Id $proc.Id
-            $UninstallProcess
-            $cpu = If ($UninstallProcess.cpu -lt 0.5) {
-                Write-Output "first less"
 
-            }
-        }Until(!$UninstallProcess -Or $cpu)
         }
-    
+    }Until(!$UninstallProcess)
 
     If ($proc.ExitCode -ne 0) {
         If ($proc.ExitCode) {
@@ -125,7 +110,9 @@ Function Uninstall-Application($App, $UninstallString) {
             $MsiArguments = $UninstallString -Replace "MsiExec.exe /I", "/X" -Replace "MsiExec.exe ", ""
 
             $proc = Start-Process -FilePath msiexec -ArgumentList "$MsiArguments /quiet" -PassThru
-            Get-UninstallStatus $App $proc
+            Wait-Process -InputObject $proc
+            Start-Sleep 3
+            Get-UninstallStatus $App
 
         }
 
@@ -153,23 +140,30 @@ Function Uninstall-Application($App, $UninstallString) {
 
             If ($UninstallString -Match '"' -And !$Arguments) {
                 $proc = Start-Process -FilePath $Path -ArgumentList $($SilentUninstallArguments) -PassThru
-                Get-UninstallStatus $App $proc
+                Wait-Process -InputObject $proc
+                Start-Sleep 3
+                Get-UninstallStatus $App
 
             }
             ElseIf ($UninstallString -Match '"' -And $Arguments) {
                 $proc = Start-Process -Filepath $Path -ArgumentList $Arguments -PassThru
-                Get-UninstallStatus $App $proc
+                Wait-Process -InputObject $proc
+                Start-Sleep 3
+                Get-UninstallStatus $App
 
             }
             ElseIf ($uninstallString -NotMatch '"' -And $Arguments) {
-                
-                $proc = Start-Process -Filepath $Path -ArgumentList $Arguments -PassThru
-                Get-UninstallStatus $App $proc
+                $proc = Start-Process -Filepath $Path -PassThru
+                Wait-Process -InputObject $proc
+                Start-Sleep 3
+                Get-UninstallStatus $App
                 
             }
             ElseIf ($uninstallString -NotMatch '"' -And !$Arguments) {
                 $proc = Start-Process -Filepath $UninstallString -ArgumentList $($SilentUninstallArguments) -PassThru
-                Get-UninstallStatus $App $proc
+                Wait-Process -InputObject $proc
+                Start-Sleep 3
+                Get-UninstallStatus $App
             }
         }
 
@@ -182,27 +176,27 @@ Function Uninstall-Application($App, $UninstallString) {
 
 }
 
-If (!$help -And !$id -And !$uninstall) {
+If (!$help -And !$id -And !$uninstall -And !$force) {
     
     $Apps = Get-Applications
     Write-Output "$(($ApplicationsObj | Measure-Object).Count) results"
     $Apps
 
 }
-If (!$help -And $id -And !$uninstall) {
+If (!$help -And $id -And !$uninstall -And !$force) {
     Get-Applications | Out-Null
     $App = Get-Application
     $App | Sort-Object DisplayName | Format-List -Property @{L = "Name"; E = { $_.DisplayName } }, @{L = "ID"; E = { $_.PSChildName } }, @{L = "Version"; E = { $_.DisplayVersion } }, @{L = "UninstallString"; E = { If ($_.QuietUninstallString) { $_.QuietUninstallString } Else { $_.UninstallString } } }
 
 }
-If (!$help -And $id -And $uninstall) {
+If (!$help -And $id -And $uninstall -And !$force) {
     Get-Applications | Out-Null
     $App = Get-Application
     $UninstallString = If ($App.QuietUninstallString) { $App.QuietUninstallString } Else { $App.UninstallString }
     Uninstall-Application $App $UninstallString
 
 }
-If ($help -And !$id -And !$uninstall) {
+If ($help -And !$id -And !$uninstall -And !$force) {
     Write-Output "`r"
     Write-Output "The following script arguments are available:"
     Write-Output "`t -help `t `t `t What you are reading now"
