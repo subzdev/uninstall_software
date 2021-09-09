@@ -23,8 +23,7 @@ v3.0 - 9/5/2021
 param(
     [switch]$help,
     [string]$id,
-    [switch]$uninstall,
-    [switch]$force
+    [switch]$uninstall
 )
 $ErrorActionPreference = 'silentlycontinue'
 $UsernameObj = (Get-CimInstance -ClassName Win32_ComputerSystem | Select-Object username).username -Split "\\"
@@ -183,27 +182,27 @@ Function Uninstall-Application($App, $UninstallString) {
 
 }
 
-If (!$help -And !$id -And !$uninstall -And !$force) {
+If (!$help -And !$id -And !$uninstall) {
     
     $Apps = Get-Applications
     Write-Output "$(($ApplicationsObj | Measure-Object).Count) results"
     $Apps
 
 }
-If (!$help -And $id -And !$uninstall -And !$force) {
+If (!$help -And $id -And !$uninstall) {
     Get-Applications | Out-Null
     $App = Get-Application
     $App | Sort-Object DisplayName | Format-List -Property @{L = "Name"; E = { $_.DisplayName } }, @{L = "ID"; E = { $_.PSChildName } }, @{L = "Version"; E = { $_.DisplayVersion } }, @{L = "UninstallString"; E = { If ($_.QuietUninstallString) { $_.QuietUninstallString } Else { $_.UninstallString } } }
 
 }
-If (!$help -And $id -And $uninstall -And !$force) {
+If (!$help -And $id -And $uninstall) {
     Get-Applications | Out-Null
     $App = Get-Application
     $UninstallString = If ($App.QuietUninstallString) { $App.QuietUninstallString } Else { $App.UninstallString }
     Uninstall-Application $App $UninstallString
 
 }
-If ($help -And !$id -And !$uninstall -And !$force) {
+If ($help -And !$id -And !$uninstall) {
     Write-Output "`r"
     Write-Output "The following script arguments are available:"
     Write-Output "`t -help `t `t `t What you are reading now"
