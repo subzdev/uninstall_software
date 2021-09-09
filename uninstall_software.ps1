@@ -47,7 +47,7 @@ Function Get-Applications {
         }
     }
 
-    $ApplicationsObj | Sort-Object DisplayName | Format-Table -Property @{L = "Name"; E = { $_.DisplayName } }, @{L = "ID"; E = { $_.PSChildName } }, @{L = "Version"; E = { $_.DisplayVersion } }
+    $ApplicationsObj | Sort-Object DisplayName | Format-Table -Wrap -AutoSize -Property @{L = "$(($ApplicationsObj | Measure-Object).Count) results"; E = { "Name: $($_.DisplayName) `nID: $($_.PSChildName) `nVersion: $($_.DisplayVersion)  `n" } }
 }
 
 Function Get-Application {
@@ -175,14 +175,13 @@ Function Uninstall-Application($App, $UninstallString) {
 If (!$help -And !$id -And !$uninstall -And !$force) {
     
     $Apps = Get-Applications
-    Write-Output "$(($ApplicationsObj | Measure-Object).Count) results"
     $Apps
 
 }
 If (!$help -And $id -And !$uninstall -And !$force) {
     Get-Applications | Out-Null
     $App = Get-Application
-    $App | Sort-Object DisplayName | Format-List -Property @{L = "Name"; E = { $_.DisplayName } }, @{L = "ID"; E = { $_.PSChildName } }, @{L = "Version"; E = { $_.DisplayVersion } }, @{L = "UninstallString"; E = { If ($_.QuietUninstallString) { $_.QuietUninstallString } Else { $_.UninstallString } } }
+    $App
 
 }
 If (!$help -And $id -And $uninstall -And !$force) {
