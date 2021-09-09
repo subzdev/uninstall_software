@@ -16,7 +16,7 @@ Examples:
          
 .NOTES
 See https://github.com/subzdev/uninstall_software/blob/main/uninstall_software.ps1 . If you have extra additions please feel free to contribute and create PR
-v3.0 - 9/5/2021
+v3.0 - 9/9/2021
 #>
 
 [CmdletBinding()]
