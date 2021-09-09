@@ -74,28 +74,24 @@ Function Get-UninstallStatus ($App) {
     Do {
         If ($p) {
             $UninstallProcess = Get-Process -Id $p
-
+            $AllUsersAppUninstall = Get-ItemProperty $AllUsersAppsPaths | Where-object { $_.PSChildName -match $id }
         }
         Else {
             $UninstallProcess = Get-Process -Id $proc.Id
+            $AllUsersAppUninstall = Get-ItemProperty $AllUsersAppsPaths | Where-object { $_.PSChildName -match $id }
 
         }
     }Until(!$UninstallProcess)
 
-    If ($proc.ExitCode -ne 0) {
-        If ($proc.ExitCode) {
-            Write-Warning "$($App.DisplayName) was not uninstalled, exited with error code $($proc.ExitCode)."
-            Write-Output "`r"
-        }
-        Else {
-            Write-Warning "$($App.DisplayName) was not uninstalled, no error code was provided."
-            Write-Output "`r"
-        }
+    If ($AllUsersAppUninstall) {
+        Write-Warning "$($App.DisplayName) was not uninstalled."
+        Write-Output "`r"
+            
     }
     Else {
         Write-Output "$($App.DisplayName) was uninstalled successfully."
         Write-Output "`r"
-    
+
     }
 }
 
@@ -153,7 +149,7 @@ Function Uninstall-Application($App, $UninstallString) {
 
             }
             ElseIf ($uninstallString -NotMatch '"' -And $Arguments) {
-                $proc = Start-Process -Filepath $Path -PassThru
+                $proc = Start-Process -Filepath $Path -ArgumentList $Arguments -PassThru
                 Wait-Process -InputObject $proc
                 Start-Sleep 3
                 Get-UninstallStatus $App
